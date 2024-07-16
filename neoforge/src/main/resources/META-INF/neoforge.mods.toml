@@ -16,7 +16,7 @@ logoFile = "icon.png"
 [[dependencies.emitrades]]
 modId = "neoforge"
 type = "REQUIRED"
-versionRange = "[21.0.86-beta,)"
+versionRange = "[21.0.60-beta,)"
 ordering = "NONE"
 side = "CLIENT"
 
