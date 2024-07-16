@@ -11,10 +11,10 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.tooltip.TooltipComponent;
 import net.minecraft.client.render.DiffuseLighting;
 import net.minecraft.client.render.entity.EntityRenderDispatcher;
+import net.minecraft.component.ComponentChanges;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.passive.VillagerEntity;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.Registries;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -70,9 +70,8 @@ public class EntityEmiStack extends EmiStack {
     }
 
     @Override
-    public NbtCompound getNbt() {
-        return Optional.ofNullable(entity) // Don't make getNbt() throw an exception, hopefully fixes some errors...
-                .map(e -> e.writeNbt(new NbtCompound())).orElse(new NbtCompound());
+    public ComponentChanges getComponentChanges() {
+        return ComponentChanges.EMPTY;
     }
 
     @Override

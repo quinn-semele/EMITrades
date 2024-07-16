@@ -26,6 +26,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.village.TradeOffer;
 import net.minecraft.village.TradeOffers;
+import net.minecraft.village.TradedItem;
 import net.minecraft.village.VillagerProfession;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
@@ -49,7 +50,7 @@ public class EMITradesPlugin implements EmiPlugin {
             SoundEvents.ENTITY_WANDERING_TRADER_YES
     );
     public static final EmiRecipeCategory VILLAGER_TRADES
-            = new EmiRecipeCategory(new Identifier("emitrades", "villager_trades"), EmiStack.of(Items.EMERALD));
+            = new EmiRecipeCategory(Identifier.of("emitrades", "villager_trades"), EmiStack.of(Items.EMERALD));
     public static EMITradesConfig.Config CONFIG;
     private static final File CONFIG_FILE = XPlatUtils.getConfigPath().resolve("emitrades.json5").toFile();
 
@@ -61,7 +62,7 @@ public class EMITradesPlugin implements EmiPlugin {
         Random random = Random.create();
         for (VillagerProfession profession : Registries.VILLAGER_PROFESSION) {
             VillagerEntity villager = (VillagerEntity)
-                    Registries.ENTITY_TYPE.get(new Identifier("minecraft", "villager")).create(MinecraftClient.getInstance().world);
+                    Registries.ENTITY_TYPE.get(Identifier.of("minecraft", "villager")).create(MinecraftClient.getInstance().world);
             if (villager != null) {
                 villager.setVillagerData(villager.getVillagerData().withProfession(profession).withLevel(5));
                 registry.addWorkstation(VILLAGER_TRADES, EntityEmiStack.ofScaled(villager, 8.0f));
@@ -72,7 +73,7 @@ public class EMITradesPlugin implements EmiPlugin {
             int level = 0;
             while (level < 5) {
                 VillagerEntity villager1 = (VillagerEntity)
-                        Registries.ENTITY_TYPE.get(new Identifier("minecraft", "villager")).create(MinecraftClient.getInstance().world);
+                        Registries.ENTITY_TYPE.get(Identifier.of("minecraft", "villager")).create(MinecraftClient.getInstance().world);
                 if (villager1 != null) {
                     villager1.setVillagerData(villager1.getVillagerData().withProfession(profession).withLevel(level + 1));
                 }
@@ -103,7 +104,7 @@ public class EMITradesPlugin implements EmiPlugin {
                 level++;
             }
         }
-        WanderingTraderEntity wanderingTrader = (WanderingTraderEntity) Registries.ENTITY_TYPE.get(new Identifier("minecraft", "wandering_trader"))
+        WanderingTraderEntity wanderingTrader = (WanderingTraderEntity) Registries.ENTITY_TYPE.get(Identifier.of("minecraft", "wandering_trader"))
                 .create(MinecraftClient.getInstance().world);
         registry.addWorkstation(VILLAGER_TRADES, EntityEmiStack.of(wanderingTrader));
         AtomicInteger wanderingTraderId = new AtomicInteger();
@@ -152,7 +153,7 @@ public class EMITradesPlugin implements EmiPlugin {
     private int compareOffers(@NotNull TradeOffer a, @NotNull TradeOffer b) {
         int diff = Registries.ITEM.getRawId(a.getOriginalFirstBuyItem().getItem()) - Registries.ITEM.getRawId(b.getOriginalFirstBuyItem().getItem());
         if (diff != 0) return diff;
-        diff = Registries.ITEM.getRawId(a.getSecondBuyItem().getItem()) - Registries.ITEM.getRawId(b.getSecondBuyItem().getItem());
+        diff = a.getSecondBuyItem().map(offer -> Registries.ITEM.getRawId(offer.item().value())).orElse(Registries.ITEM.size()) - b.getSecondBuyItem().map(offer -> Registries.ITEM.getRawId(offer.item().value())).orElse(Registries.ITEM.size());
         if (diff != 0) return diff;
         diff = Registries.ITEM.getRawId(a.getSellItem().getItem()) - Registries.ITEM.getRawId(b.getSellItem().getItem());
         return diff;
@@ -167,7 +168,7 @@ public class EMITradesPlugin implements EmiPlugin {
 
         public FakeFactory(TradeOffer offer) {
             this.first = offer.getOriginalFirstBuyItem();
-            this.second = offer.getSecondBuyItem();
+            this.second = offer.getSecondBuyItem().map(TradedItem::itemStack).orElse(ItemStack.EMPTY);
             this.sell = offer.getSellItem();
         }
 

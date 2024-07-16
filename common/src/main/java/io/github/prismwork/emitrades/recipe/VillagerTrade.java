@@ -14,6 +14,9 @@ import io.github.prismwork.emitrades.util.ListEmiStack;
 import io.github.prismwork.emitrades.util.TradeProfile;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.PotionContentsComponent;
+import net.minecraft.component.type.SuspiciousStewEffectsComponent;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.EnchantmentLevelEntry;
@@ -21,10 +24,9 @@ import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.item.EnchantedBookItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.item.SuspiciousStewItem;
-import net.minecraft.potion.PotionUtil;
-import net.minecraft.recipe.BrewingRecipeRegistry;
 import net.minecraft.registry.Registries;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.tag.EnchantmentTags;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -61,7 +63,7 @@ public class VillagerTrade implements EmiRecipe {
         }
         TradeOffers.Factory offer = profile.offer();
         if (offer instanceof TradeOffers.BuyItemFactory factory) {
-            inputs.add(0, EmiStack.of(factory.stack, factory.price));
+            inputs.add(0, EmiStack.of(factory.stack.itemStack(), factory.price));
             inputs.add(1, EmiStack.EMPTY);
             outputs.add(0, EmiStack.of(Items.EMERALD));
         } else if (offer instanceof TradeOffers.SellItemFactory factory) {
@@ -72,11 +74,11 @@ public class VillagerTrade implements EmiRecipe {
             inputs.add(0, EmiStack.of(Items.EMERALD, 1));
             inputs.add(1, EmiStack.EMPTY);
             ItemStack stack = new ItemStack(Items.SUSPICIOUS_STEW, 1);
-            SuspiciousStewItem.addEffectsToStew(stack, factory.stewEffects);
+            stack.set(DataComponentTypes.SUSPICIOUS_STEW_EFFECTS, new SuspiciousStewEffectsComponent(factory.stewEffects.effects()));
             outputs.add(0, EmiStack.of(stack));
         } else if (offer instanceof TradeOffers.ProcessItemFactory factory) {
             inputs.add(0, EmiStack.of(Items.EMERALD, factory.price));
-            inputs.add(1, EmiStack.of(factory.toBeProcessed));
+            inputs.add(1, EmiStack.of(factory.toBeProcessed.itemStack()));
             outputs.add(0, EmiStack.of(factory.processed));
         } else if (offer instanceof TradeOffers.SellEnchantedToolFactory factory) {
             inputs.add(0, EmiStack.of(Items.EMERALD, Math.min(factory.basePrice + 5, 64)));
@@ -86,16 +88,20 @@ public class VillagerTrade implements EmiRecipe {
             int enchantability = factory.tool.getItem().getEnchantability();
             int power = 5 + 15 + 1
                     + (enchantability / 4 + 1) + (enchantability / 4 + 1);
-            EnchantmentHelper.getPossibleEntries(power, factory.tool, false).forEach(
-                    entry -> {
-                        Enchantment enchantment = entry.enchantment;
-                        for (int i = enchantment.getMinLevel(); i <= enchantment.getMaxLevel(); i++){
-                            ItemStack stack = factory.tool.copy();
-                            stack.addEnchantment(entry.enchantment, i);
-                            out.add(EmiStack.of(stack));
+            var tradeableEnchants = MinecraftClient.getInstance().world.getRegistryManager().get(RegistryKeys.ENCHANTMENT).getEntryList(EnchantmentTags.ON_TRADED_EQUIPMENT);
+            tradeableEnchants.ifPresent(enchantments -> {
+                EnchantmentHelper.getPossibleEntries(power, factory.tool, enchantments.stream()).forEach(
+                        entry -> {
+                            Enchantment enchantment = entry.enchantment.value();
+                            for (int i = enchantment.getMinLevel(); i <= enchantment.getMaxLevel(); i++){
+                                ItemStack stack = factory.tool.copy();
+                                stack.addEnchantment(entry.enchantment, i);
+                                out.add(EmiStack.of(stack));
+                            }
                         }
-                    }
-            );
+                );
+            });
+
 
             outputs.add(0, new ListEmiStack(out, factory.tool.getCount()));
         } else if (offer instanceof TradeOffers.TypeAwareBuyForOneEmeraldFactory factory) {
@@ -109,12 +115,14 @@ public class VillagerTrade implements EmiRecipe {
             inputs.add(1, EmiStack.of(factory.secondBuy, factory.secondCount));
 
             List<EmiStack> out = new ArrayList<>();
-            Registries.POTION.stream().filter((potion) ->
-                    !potion.getEffects().isEmpty() && BrewingRecipeRegistry.isBrewable(potion)).forEach(
-                            potion -> {
-                                ItemStack stack = PotionUtil.setPotion(factory.sell, potion);
-                                out.add(EmiStack.of(stack));
-                            }
+            var brewingRegistry = MinecraftClient.getInstance().world.getBrewingRecipeRegistry();
+            Registries.POTION.streamEntries().filter((potion) ->
+                    !potion.value().getEffects().isEmpty() && brewingRegistry.isBrewable(potion)).forEach(
+                    potion -> {
+                        ItemStack stack = factory.sell.copy();
+                        stack.set(DataComponentTypes.POTION_CONTENTS, new PotionContentsComponent(potion));
+                        out.add(EmiStack.of(stack));
+                    }
             );
 
             outputs.add(0, new ListEmiStack(out, factory.sellCount));
@@ -123,19 +131,19 @@ public class VillagerTrade implements EmiRecipe {
             inputs.add(1, EmiStack.of(Items.BOOK));
 
             List<EmiStack> out = new ArrayList<>();
-            factory.possibleEnchantments.forEach(
-                    enchantment -> {
-                        int min = Math.max(enchantment.getMinLevel(), factory.minLevel);
-                        int max = Math.min(enchantment.getMaxLevel(), factory.maxLevel);
+            MinecraftClient.getInstance().world.getRegistryManager().get(RegistryKeys.ENCHANTMENT).getEntryList(factory.possibleEnchantments).ifPresent(enchantments -> {
+                enchantments.forEach(enchantmentEntry -> {
+                    int min = Math.max(enchantmentEntry.value().getMinLevel(), factory.minLevel);
+                    int max = Math.min(enchantmentEntry.value().getMaxLevel(), factory.maxLevel);
 
-                        for (int i = min; i <= max; i++) {
-                            ItemStack stack = EnchantedBookItem.forEnchantment(
-                                    new EnchantmentLevelEntry(enchantment, i)
-                            );
-                            out.add(EmiStack.of(stack));
-                        }
+                    for (int i = min; i <= max; i++) {
+                        ItemStack stack = EnchantedBookItem.forEnchantment(
+                                new EnchantmentLevelEntry(enchantmentEntry, i)
+                        );
+                        out.add(EmiStack.of(stack));
                     }
-            );
+                });
+            });
 
             outputs.add(0, new ListEmiStack(out, 1));
         } else if (offer instanceof TradeOffers.SellMapFactory factory) {
@@ -169,7 +177,7 @@ public class VillagerTrade implements EmiRecipe {
 
     @Override
     public @Nullable Identifier getId() {
-        return new Identifier("emitrades", "villager_trades/" + profile.profession().id().substring(profile.profession().id().lastIndexOf(":") + 1) + "_" + id);
+        return Identifier.of("emitrades", "villager_trades/" + profile.profession().id().substring(profile.profession().id().lastIndexOf(":") + 1) + "_" + id);
     }
 
     @Override

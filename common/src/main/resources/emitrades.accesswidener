@@ -14,12 +14,12 @@ accessible class net/minecraft/village/TradeOffers$SellDyedArmorFactory
 accessible class net/minecraft/village/TradeOffers$TypeAwareBuyForOneEmeraldFactory
 accessible class net/minecraft/village/TradeOffers$SellSuspiciousStewFactory
 
-accessible field net/minecraft/village/TradeOffers$BuyItemFactory stack Lnet/minecraft/item/ItemStack;
+accessible field net/minecraft/village/TradeOffers$BuyItemFactory stack Lnet/minecraft/village/TradedItem;
 accessible field net/minecraft/village/TradeOffers$BuyItemFactory price I
 accessible field net/minecraft/village/TradeOffers$SellItemFactory sell Lnet/minecraft/item/ItemStack;
 accessible field net/minecraft/village/TradeOffers$SellItemFactory price I
-accessible field net/minecraft/village/TradeOffers$SellSuspiciousStewFactory stewEffects Ljava/util/List;
-accessible field net/minecraft/village/TradeOffers$ProcessItemFactory toBeProcessed Lnet/minecraft/item/ItemStack;
+accessible field net/minecraft/village/TradeOffers$SellSuspiciousStewFactory stewEffects Lnet/minecraft/component/type/SuspiciousStewEffectsComponent;
+accessible field net/minecraft/village/TradeOffers$ProcessItemFactory toBeProcessed Lnet/minecraft/village/TradedItem;
 accessible field net/minecraft/village/TradeOffers$ProcessItemFactory processed Lnet/minecraft/item/ItemStack;
 accessible field net/minecraft/village/TradeOffers$ProcessItemFactory price I
 accessible field net/minecraft/village/TradeOffers$SellEnchantedToolFactory tool Lnet/minecraft/item/ItemStack;
@@ -34,6 +34,6 @@ accessible field net/minecraft/village/TradeOffers$SellDyedArmorFactory sell Lne
 accessible field net/minecraft/village/TradeOffers$SellDyedArmorFactory price I
 accessible field net/minecraft/village/TradeOffers$TypeAwareBuyForOneEmeraldFactory map Ljava/util/Map;
 accessible field net/minecraft/village/TradeOffers$TypeAwareBuyForOneEmeraldFactory count I
-accessible field net/minecraft/village/TradeOffers$EnchantBookFactory possibleEnchantments Ljava/util/List;
+accessible field net/minecraft/village/TradeOffers$EnchantBookFactory possibleEnchantments Lnet/minecraft/registry/tag/TagKey;
 accessible field net/minecraft/village/TradeOffers$EnchantBookFactory minLevel I
 accessible field net/minecraft/village/TradeOffers$EnchantBookFactory maxLevel I

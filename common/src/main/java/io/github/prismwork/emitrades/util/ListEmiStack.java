@@ -8,7 +8,7 @@ import dev.emi.emi.api.stack.EmiStack;
 import dev.emi.emi.screen.tooltip.IngredientTooltipComponent;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.tooltip.TooltipComponent;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.component.ComponentChanges;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
@@ -87,8 +87,8 @@ public class ListEmiStack extends EmiStack {
     }
 
     @Override
-    public NbtCompound getNbt() {
-        return new NbtCompound();
+    public ComponentChanges getComponentChanges() {
+        return ComponentChanges.EMPTY;
     }
 
     @Override
@@ -98,7 +98,7 @@ public class ListEmiStack extends EmiStack {
 
     @Override
     public Identifier getId() {
-        return new Identifier("emitrades", "list_emi_stack");
+        return Identifier.of("emitrades", "list_emi_stack");
     }
 
     @Override
